@@ -6,11 +6,13 @@ logger = logging.getLogger("uvicorn.error")
 
 supabase_client: Client = None
 
+supabase_url = str(settings.SUPABASE_URL) if settings.SUPABASE_URL else ""
+
 # Check if we have valid configurations or if we are using placeholders
 is_supabase_configured = (
-    settings.SUPABASE_URL 
-    and "placeholder" not in settings.SUPABASE_URL 
-    and "your-project-id" not in settings.SUPABASE_URL
+    supabase_url 
+    and "placeholder" not in supabase_url 
+    and "your-project-id" not in supabase_url
     and settings.SUPABASE_SERVICE_ROLE_KEY 
     and "placeholder" not in settings.SUPABASE_SERVICE_ROLE_KEY
     and "your-service-role" not in settings.SUPABASE_SERVICE_ROLE_KEY
@@ -18,7 +20,7 @@ is_supabase_configured = (
 
 if is_supabase_configured:
     try:
-        supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+        supabase_client = create_client(supabase_url, settings.SUPABASE_SERVICE_ROLE_KEY)
         logger.info("Supabase client initialized successfully.")
     except Exception as e:
         logger.error(f"Failed to initialize Supabase client: {e}")

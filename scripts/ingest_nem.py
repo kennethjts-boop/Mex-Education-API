@@ -117,7 +117,7 @@ def main():
     # 4. Registrar en Supabase
     is_supabase_ready = (
         supabase_client is not None 
-        and "placeholder" not in settings.SUPABASE_URL
+        and "placeholder" not in str(settings.SUPABASE_URL)
     )
 
     if is_supabase_ready:

@@ -36,7 +36,7 @@ def get_contenidos(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
         
     is_supabase_ready = (
         supabase_client is not None 
-        and "placeholder" not in supabase_client.supabase_url
+        and "placeholder" not in str(supabase_client.supabase_url)
     )
 
     if is_supabase_ready:
@@ -81,7 +81,7 @@ def get_pda(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
         
     is_supabase_ready = (
         supabase_client is not None 
-        and "placeholder" not in supabase_client.supabase_url
+        and "placeholder" not in str(supabase_client.supabase_url)
     )
 
     if is_supabase_ready:
@@ -155,7 +155,7 @@ def relacionar_curriculo(
     # Si estamos en Supabase, recuperamos la estructura
     is_supabase_ready = (
         supabase_client is not None 
-        and "placeholder" not in supabase_client.supabase_url
+        and "placeholder" not in str(supabase_client.supabase_url)
     )
     
     all_structures = []
