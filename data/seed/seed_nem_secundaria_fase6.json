@@ -1,0 +1,127 @@
+{
+  "contenidos": [
+    {
+      "id": "e9b28b9c-7e61-4c12-9c10-e7cf7b8a1c9e",
+      "modelo": "NEM_2022",
+      "nivel": "Secundaria",
+      "fase": "Fase 6",
+      "grado": "2",
+      "campo_formativo": "Saberes y Pensamiento Científico",
+      "contenido": "Saberes y prácticas para el aprovechamiento de energías y la sustentabilidad",
+      "descripcion": "Estudio de las fuentes de energía, sus propiedades, ventajas y desventajas, y el aprovechamiento de recursos como la energía solar para el desarrollo sustentable.",
+      "fuente": "seed_local_validacion",
+      "pda": [
+        {
+          "id": "2db419b1-7a61-419b-a3d5-e362fa91cb9a",
+          "pda": "Analiza las características de la energía solar, el viento y la biomasa como fuentes alternativas de energía y describe sus aplicaciones y beneficios ecológicos.",
+          "fuente": "seed_local_validacion"
+        },
+        {
+          "id": "4cba1900-ebe0-473d-82d2-c7a6e190cbda",
+          "pda": "Diseña y construye un prototipo tecnológico sencillo (como una cocina o calentador solar) para demostrar la transformación de energía solar en calor.",
+          "fuente": "seed_local_validacion"
+        },
+        {
+          "id": "7ab102f9-7664-411a-829d-ee130f19cb90",
+          "pda": "Valora la importancia de la sustentabilidad y el impacto ambiental del consumo energético en la comunidad.",
+          "fuente": "seed_local_validacion"
+        }
+      ]
+    },
+    {
+      "id": "7b0fa932-d874-4b5c-ac19-ef8310f8cfda",
+      "modelo": "NEM_2022",
+      "nivel": "Secundaria",
+      "fase": "Fase 6",
+      "grado": "2",
+      "campo_formativo": "Saberes y Pensamiento Científico",
+      "contenido": "Funciones y relaciones de proporcionalidad en representaciones gráficas",
+      "descripcion": "Estudio de la proporcionalidad directa e inversa y su modelado a través de gráficas cartesianas e interpretación en fenómenos cotidianos y científicos.",
+      "fuente": "seed_local_validacion",
+      "pda": [
+        {
+          "id": "b1b190cd-9cc1-4fb2-ad82-d961ce90a1bc",
+          "pda": "Relaciona e interpreta variables en gráficos cartesianos de proporcionalidad directa, como la relación entre la cantidad de radiación captada y la potencia eléctrica de un panel solar.",
+          "fuente": "seed_local_validacion"
+        },
+        {
+          "id": "c1f190cd-9cc2-4fb3-ad83-d961ce90a2cd",
+          "pda": "Resuelve problemas cotidianos y científicos utilizando funciones de proporcionalidad directa e inversa representadas gráfica y algebraicamente.",
+          "fuente": "seed_local_validacion"
+        }
+      ]
+    },
+    {
+      "id": "8c0fa232-a123-4b6c-bc19-123450f8cf1a",
+      "modelo": "NEM_2022",
+      "nivel": "Secundaria",
+      "fase": "Fase 6",
+      "grado": "2",
+      "campo_formativo": "Saberes y Pensamiento Científico",
+      "contenido": "Estructura, propiedades y relación entre materia y energía",
+      "descripcion": "Indagación sobre las propiedades generales de la materia, su estructura atómica y las transformaciones energéticas en las que participa.",
+      "fuente": "seed_local_validacion",
+      "pda": [
+        {
+          "id": "a1f102f9-7664-411a-829d-ee130f19cb91",
+          "pda": "Explica la relación entre la radiación solar y la materia, analizando el comportamiento de absorción y reflexión de diferentes materiales.",
+          "fuente": "seed_local_validacion"
+        }
+      ]
+    },
+    {
+      "id": "f2a28b9c-7e61-4c12-9c10-e7cf7b8a1c9f",
+      "modelo": "NEM_2022",
+      "nivel": "Secundaria",
+      "fase": "Fase 6",
+      "grado": "2",
+      "campo_formativo": "Lenguajes",
+      "contenido": "La diversidad de lenguas y su uso en la comunicación familiar, escolar y comunitaria",
+      "descripcion": "Estudio del valor cultural y social de las lenguas de México y el mundo, y la importancia del diálogo intercultural en el entorno escolar.",
+      "fuente": "seed_local_validacion",
+      "pda": [
+        {
+          "id": "3db419b1-7a61-419b-a3d5-e362fa91cb9b",
+          "pda": "Comprende y argumenta la riqueza de la multiculturalidad lingüística a través de textos informativos orales y escritos.",
+          "fuente": "seed_local_validacion"
+        }
+      ]
+    },
+    {
+      "id": "a3b28b9c-7e61-4c12-9c10-e7cf7b8a1c9a",
+      "modelo": "NEM_2022",
+      "nivel": "Secundaria",
+      "fase": "Fase 6",
+      "grado": "2",
+      "campo_formativo": "Ética, Naturaleza y Sociedades",
+      "contenido": "Valoración de los ecosistemas, preservación y consumo sustentable",
+      "descripcion": "Análisis de la interdependencia entre las sociedades y el medio ambiente, y promoción de prácticas comunitarias sustentables.",
+      "fuente": "seed_local_validacion",
+      "pda": [
+        {
+          "id": "4db419b1-7a61-419b-a3d5-e362fa91cb9c",
+          "pda": "Propone alternativas éticas y de consumo sustentable para disminuir el impacto de las actividades humanas sobre los ecosistemas locales.",
+          "fuente": "seed_local_validacion"
+        }
+      ]
+    },
+    {
+      "id": "d4b28b9c-7e61-4c12-9c10-e7cf7b8a1c9d",
+      "modelo": "NEM_2022",
+      "nivel": "Secundaria",
+      "fase": "Fase 6",
+      "grado": "2",
+      "campo_formativo": "De lo Humano y lo Comunitario",
+      "contenido": "Pensamiento estratégico y creativo en la resolución de problemas comunitarios",
+      "descripcion": "Desarrollo del pensamiento de diseño, innovación y colaboración estratégica para solucionar retos técnicos y sociales locales.",
+      "fuente": "seed_local_validacion",
+      "pda": [
+        {
+          "id": "5db419b1-7a61-419b-a3d5-e362fa91cb9d",
+          "pda": "Planifica y organiza proyectos técnicos o sociales escolares que responden de forma creativa a necesidades del entorno comunitario.",
+          "fuente": "seed_local_validacion"
+        }
+      ]
+    }
+  ]
+}

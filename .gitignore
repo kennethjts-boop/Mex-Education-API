@@ -1,0 +1,15 @@
+.env
+venv/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+reports/
+data/*.json
+data/ingested_*
+*.log
+
+# No ignorar subcarpetas oficiales y semillas curriculares
+!data/oficiales/
+!data/seed/
+!data/seed/*.json
