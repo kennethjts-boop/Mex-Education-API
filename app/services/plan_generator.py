@@ -24,29 +24,83 @@ def load_prompt_template() -> str:
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read()
 
+def compress_chunks_for_prompt(chunks: List[Dict[str, Any]]) -> str:
+    """
+    Comprime y limpia los chunks para inyectar en el prompt.
+    Recorta cada chunk a máximo 900 caracteres, elimina saltos raros y duplicados.
+    """
+    seen_texts = set()
+    compressed_parts = []
+    
+    for idx, r in enumerate(chunks):
+        texto = r.get("texto", "")
+        # Contraer múltiples espacios y saltos en uno solo
+        texto_limpio = " ".join(texto.split())
+        # Recortar a 900 caracteres
+        texto_recortado = texto_limpio[:900]
+        
+        # Evitar duplicidad exacta o muy parecida
+        normalized_key = texto_recortado.lower()[:100] # Primeros 100 caracteres como clave
+        if normalized_key in seen_texts:
+            continue
+        seen_texts.add(normalized_key)
+        
+        doc_titulo = r.get("documento", {}).get("titulo") or r.get("documento_titulo") or "Plan de Estudio"
+        pagina = r.get("pagina")
+        sim = r.get("similarity") or r.get("similitud") or 0.0
+        
+        part = (
+            f"--- Fragmento {idx+1} [Origen: {doc_title_clean(doc_titulo)} | Pág. {pagina} | Similitud: {round(sim, 2)}] ---\n"
+            f"{texto_recortado}"
+        )
+        compressed_parts.append(part)
+        
+    return "\n\n".join(compressed_parts)
+
 def generate_lesson_plan(
     tema: str,
     grado: str,
     nivel: str,
     campo_formativo: str,
     duracion_dias: int,
-    modelo: str
+    modelo: str,
+    limit: int = 3
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]], str, str, Dict[str, Any]]:
     """
-    Ejecuta el flujo RAG Híbrido:
-    1. Obtiene contenidos y PDA estructurados relacionados (Fase 5).
-    2. Realiza búsqueda vectorial en chunks de PDF (Fase 3/4).
-    3. Valida obligatoriedad curricular (No-Inventar). Si RAG falla pero hay currículo estructurado,
-       permite la generación marcando alertas correspondientes.
-    4. Compone el prompt de planeación pedagógica.
-    5. Invoca a OpenAI o simula la respuesta.
+    Ejecuta el flujo RAG Híbrido Optimizado (Fase 8):
+    1. Busca en la caché de planeaciones en memoria.
+    2. Obtiene contenidos y PDA estructurados relacionados (Fase 5).
+    3. Realiza búsqueda vectorial expandida en chunks de PDF (Fase 8 query expansion, threshold 0.35).
+    4. Valida obligatoriedad curricular (No-Inventar).
+    5. Comprime los chunks para inyectar en el prompt (Máx 900 chars/chunk).
+    6. Invoca a OpenAI o simula la respuesta.
     
     Retorna: (planeacion_dict, chunks_utilizados, prompt_construido, query_generada, metadatos_curriculo)
     """
-    # 1. Normalizar modelo
+    # 1. Intentar obtener de la caché de planeaciones
+    cache_key = {
+        "tema": tema,
+        "grado": grado,
+        "nivel": nivel,
+        "campo_formativo": campo_formativo,
+        "duracion_dias": duracion_dias,
+        "modelo": modelo,
+        "limit": limit
+    }
+    
+    from app.services.cache_service import plan_cache
+    cached_val = plan_cache.get(cache_key)
+    if cached_val is not None:
+        logger.info(f"Caché Planeación Hit para tema: '{tema}'")
+        planeacion_dict, chunks_utilizados, prompt_construido, query_generada, metadatos_curriculo = cached_val
+        meta_copy = metadatos_curriculo.copy()
+        meta_copy["cache_hit"] = True
+        return planeacion_dict, chunks_utilizados, prompt_construido, query_generada, meta_copy
+
+    # 2. Normalizar modelo
     modelo_normalizado = normalize_modelo(modelo) or "NEM_2022"
     
-    # 2. Consultar currículo estructurado
+    # 3. Consultar currículo estructurado
     rel_res = relacionar_curriculo(
         tema=tema,
         grado=grado,
@@ -66,8 +120,8 @@ def generate_lesson_plan(
     if contenidos_rel_objs:
         curriculum_source = contenidos_rel_objs[0].get("fuente", "seed_local_validacion")
         
-    # 3. Búsqueda RAG Vectorial
-    query_generada = f"{tema} {campo_formativo}"
+    # 4. Búsqueda RAG Vectorial (Query Expandida)
+    query_generada = f"{tema} {campo_formativo} grado {grado} secundaria actividades proyectos evaluación"
     filters = {
         "modelo": modelo_normalizado,
         "nivel": nivel
@@ -75,12 +129,12 @@ def generate_lesson_plan(
     if campo_formativo:
         filters["campo_formativo"] = campo_formativo
         
-    logger.info(f"RAG Híbrido: Buscando chunks para query: '{query_generada}' y filtros: {filters}")
+    logger.info(f"RAG Híbrido Optimizado: Buscando chunks para query: '{query_generada}' (limit={limit})")
     
     raw_chunks = search_nem_chunks(
         query_text=query_generada,
-        limit=3,
-        match_threshold=0.25,
+        limit=limit,
+        match_threshold=0.35, # Umbral mínimo de similitud aumentado a 0.35
         filters=filters
     )
     
@@ -104,39 +158,31 @@ def generate_lesson_plan(
                 "La generación ha sido cancelada para evitar alucinaciones pedagógicas (política No-Inventar)."
             )
             
-    # Formatear el contexto para el prompt
-    context_parts = []
+    # Formatear el contexto comprimido para el prompt
     chunks_utilizados = []
-    
     if raw_chunks:
-        for idx, r in enumerate(raw_chunks):
+        context_str = compress_chunks_for_prompt(raw_chunks)
+        for r in raw_chunks:
             sim = r.get("similarity") or r.get("similitud") or 0.0
-            doc_titulo = r.get("documento", {}).get("titulo") or "Plan de Estudio"
-            
-            context_parts.append(
-                f"--- Fragmento {idx+1} [Origen: {doc_title_clean(doc_titulo)} | Pág. {r.get('pagina')}] ---\n"
-                f"{r['texto']}"
-            )
-            
+            doc_titulo = r.get("documento", {}).get("titulo") or r.get("documento_titulo") or "Plan de Estudio"
             chunks_utilizados.append({
                 "id": r.get("id") or r.get("chunk_id") or "simulated-id",
                 "documento_titulo": doc_title_clean(doc_titulo),
                 "pagina": r.get("pagina"),
-                "texto": r["texto"],
+                "texto": r["texto"][:900], # Reflejar texto comprimido
                 "similitud": sim
             })
     else:
         # Si no hay chunks, proveer el currículo estructurado como el contexto primordial
-        context_parts.append("--- CONTENIDOS CURRICULARES ESTRUCTURADOS ---")
+        context_parts = ["--- CONTENIDOS CURRICULARES ESTRUCTURADOS ---"]
         for idx, c in enumerate(contenidos_rel_objs):
             context_parts.append(f"Contenido: {c['contenido']}\nDescripción: {c.get('descripcion', '')}")
         context_parts.append("--- PROCESOS DE DESARROLLO DE APRENDIZAJE (PDA) VINCULADOS ---")
         for idx, p in enumerate(pda_rel_objs):
             context_parts.append(f"- {p['pda']}")
-            
-    context_str = "\n\n".join(context_parts)
+        context_str = "\n\n".join(context_parts)
     
-    # 4. Construir el prompt
+    # 5. Construir el prompt
     template = load_prompt_template()
     prompt_construido = template.format(
         context=context_str,
@@ -154,10 +200,13 @@ def generate_lesson_plan(
         "curriculum_source": curriculum_source,
         "source_warning": source_warning,
         "retrieval_success": retrieval_success,
-        "structured_curriculum_success": structured_curriculum_success
+        "structured_curriculum_success": structured_curriculum_success,
+        "chunks_count": len(chunks_utilizados),
+        "context_chars": len(context_str),
+        "cache_hit": False
     }
     
-    # 5. Generación con OpenAI o Simulación
+    # 6. Generación con OpenAI o Simulación
     is_openai_ready = settings.OPENAI_API_KEY and "your-openai-api-key" not in settings.OPENAI_API_KEY
     
     if is_openai_ready:
@@ -175,14 +224,19 @@ def generate_lesson_plan(
             )
             raw_response = response.choices[0].message.content
             planeacion_dict = json.loads(raw_response)
+            
+            # Guardar en caché antes de retornar
+            plan_cache.set(cache_key, (planeacion_dict, chunks_utilizados, prompt_construido, query_generada, metadatos_curriculo))
             return planeacion_dict, chunks_utilizados, prompt_construido, query_generada, metadatos_curriculo
         except Exception as e:
             logger.error(f"Error llamando a OpenAI: {e}. Activando simulación de contingencia.")
             planeacion_dict = _generate_mock_lesson_plan(tema, grado, nivel, campo_formativo, duracion_dias, pda_relacionado_texts)
+            plan_cache.set(cache_key, (planeacion_dict, chunks_utilizados, prompt_construido, query_generada, metadatos_curriculo))
             return planeacion_dict, chunks_utilizados, prompt_construido, query_generada, metadatos_curriculo
     else:
         logger.warning("OpenAI no configurado. Ejecutando simulación generativa local.")
         planeacion_dict = _generate_mock_lesson_plan(tema, grado, nivel, campo_formativo, duracion_dias, pda_relacionado_texts)
+        plan_cache.set(cache_key, (planeacion_dict, chunks_utilizados, prompt_construido, query_generada, metadatos_curriculo))
         return planeacion_dict, chunks_utilizados, prompt_construido, query_generada, metadatos_curriculo
 
 def doc_title_clean(title: Any) -> str:

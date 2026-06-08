@@ -56,6 +56,20 @@ def search_nem_chunks(
     Performs a semantic vector search in the chunks_nem table via Supabase RPC.
     If Supabase is not configured or queries fail, returns mock demonstration results.
     """
+    # 1. Intentar obtener de la caché
+    cache_key = {
+        "query_text": query_text,
+        "limit": limit,
+        "match_threshold": match_threshold,
+        "filters": filters
+    }
+    
+    from app.services.cache_service import rag_cache
+    cached_val = rag_cache.get(cache_key)
+    if cached_val is not None:
+        logger.info(f"Caché RAG Hit para consulta: '{query_text}'")
+        return cached_val
+
     # Normalizar el modelo si se especifica en los filtros
     if filters and "modelo" in filters and filters["modelo"]:
         filters["modelo"] = normalize_modelo(filters["modelo"])
@@ -64,7 +78,9 @@ def search_nem_chunks(
     
     if supabase_client is None:
         logger.warning("Supabase client not initialized. Returning mock search results for demo.")
-        return _get_mock_search_results(query_text, filters)
+        results = _get_mock_search_results(query_text, filters)
+        rag_cache.set(cache_key, results)
+        return results
         
     try:
         # Prepare parameters for the RPC call
@@ -77,10 +93,14 @@ def search_nem_chunks(
         
         # Execute RPC function match_chunks_nem
         response = supabase_client.rpc("match_chunks_nem", rpc_params).execute()
-        return response.data
+        results = response.data
+        rag_cache.set(cache_key, results)
+        return results
     except Exception as e:
         logger.error(f"Error executing match_chunks RPC on Supabase: {e}. Falling back to mock search results.")
-        return _get_mock_search_results(query_text, filters)
+        results = _get_mock_search_results(query_text, filters)
+        rag_cache.set(cache_key, results)
+        return results
 
 def _get_mock_search_results(query: str, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """

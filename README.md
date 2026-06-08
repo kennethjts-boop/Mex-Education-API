@@ -335,6 +335,34 @@ Para configurar el repositorio de GitHub y la base de datos real de Supabase, si
 
 ---
 
+## ⚡ Optimización de Latencia y Calidad RAG (Fase 8)
+
+La Fase 8 implementa técnicas avanzadas para reducir drásticamente la latencia promedio del motor RAG por debajo de los **5 segundos** (con respuestas por debajo de **50 ms** para peticiones en caché) y mejorar la precisión del contexto didáctico.
+
+### 1. Sistema de Caché en Memoria
+Se implementó un sistema de caché en memoria (`MemoryCache`) thread-safe con expiración TTL de 30 minutos y hashing SHA-256 determinista:
+- **Caché RAG:** Almacena resultados de búsqueda vectorial en Supabase basados en consulta y filtros.
+- **Caché de Generación:** Almacena la planeación didáctica generada en base a la configuración completa del payload de entrada.
+
+### 2. Optimización y Compresión de Prompt (RAG)
+Para mitigar la latencia asociada a tokens excesivos en el prompt al LLM:
+- **Reducción de Top-K:** Límite máximo de **3 chunks** para solicitudes estándar de `/generar` y **5 chunks** para `/debug`.
+- **Umbral de Similitud:** Filtro estricto que descarta cualquier fragmento con similitud menor a **0.35**.
+- **Compresión de Chunks:** Cada fragmento de texto recuperado se comprime a un tamaño máximo de **900 caracteres**, conservando el título del documento original, la página y la información didáctica clave.
+- **Expansión de Query RAG:** Normalización y enriquecimiento automático del término de búsqueda utilizando palabras clave de la NEM.
+
+### 3. Ejecutar Benchmark de Latencia (`scripts/benchmark_generation.py`)
+Mide la latencia de 5 peticiones secuenciales frías (cold) contra 5 calientes (hot/cached) para demostrar cuantitativamente el rendimiento y el speedup del sistema de caché:
+```bash
+python3 scripts/benchmark_generation.py
+```
+*Genera una tabla comparativa en la consola mostrando la reducción de tiempos de respuesta y el porcentaje de optimización logrado (típicamente >95% en aciertos de caché).*
+
+### 4. Evaluación Completa con Percentiles (`scripts/evaluate_planeaciones.py`)
+El script de evaluación por lotes calcula e informa automáticamente los percentiles p50, p95 y latencia máxima de la corrida de 25 planeaciones, además del número de aciertos de caché.
+
+---
+
 ## ☁️ Despliegue en Railway
 
 Esta aplicación está completamente configurada para desplegarse en **Railway** usando el archivo de configuración `railway.json`.

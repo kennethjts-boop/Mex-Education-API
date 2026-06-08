@@ -16,6 +16,15 @@ from app.services.evaluation_service import calculate_heuristic_score
 # Configuración por defecto
 DEFAULT_BASE_URL = "http://127.0.0.1:8001"
 
+def percentile(values, p):
+    if not values:
+        return 0.0
+    sorted_vals = sorted(values)
+    k = (len(sorted_vals) - 1) * (p / 100.0)
+    f = int(k)
+    c = min(f + 1, len(sorted_vals) - 1)
+    return sorted_vals[f] + (sorted_vals[c] - sorted_vals[f]) * (k - f)
+
 def evaluate_run(base_url: str, payload: dict) -> dict:
     """
     Envía una petición de generación a la API, mide tiempos,
@@ -56,6 +65,9 @@ def evaluate_run(base_url: str, payload: dict) -> dict:
         "success": False,
         "status_code": status_code,
         "latency_ms": round(latency_ms, 2),
+        "cache_hit": False,
+        "chunks_count": 0,
+        "context_chars": 0,
         "retrieval_success": False,
         "fallback_usage": False,
         "response_length_chars": 0,
@@ -72,6 +84,12 @@ def evaluate_run(base_url: str, payload: dict) -> dict:
             structured_curriculum_success = res_json.get("structured_curriculum_success", False)
             fallback_usage = (not retrieval_success and structured_curriculum_success)
             
+            metadata = res_json.get("metadata", {})
+            server_latency_ms = metadata.get("latency_ms", latency_ms)
+            cache_hit = metadata.get("cache_hit", False)
+            chunks_count = metadata.get("chunks_count", 0)
+            context_chars = metadata.get("context_chars", 0)
+            
             # Calcular score heurístico local
             score, notes = calculate_heuristic_score(planeacion, payload["duracion_dias"])
             
@@ -81,7 +99,11 @@ def evaluate_run(base_url: str, payload: dict) -> dict:
                 "fallback_usage": fallback_usage,
                 "response_length_chars": len(response_body),
                 "score": score,
-                "notes": notes
+                "notes": notes,
+                "latency_ms": round(server_latency_ms, 2),
+                "cache_hit": cache_hit,
+                "chunks_count": chunks_count,
+                "context_chars": context_chars
             })
         except Exception as e:
             eval_result["notes"] = f"Error parseando respuesta JSON exitosa: {e}"
@@ -209,6 +231,12 @@ def main():
     avg_score = total_score / success_count if success_count > 0 else 0.0
     failure_count = len(test_runs) - success_count
     
+    latencies = [run_res["latency_ms"] for run_res in results]
+    p50_latency = percentile(latencies, 50)
+    p95_latency = percentile(latencies, 95)
+    max_latency = max(latencies) if latencies else 0.0
+    cache_hits = sum(1 for run_res in results if run_res.get("cache_hit", False))
+    
     summary = {
         "evaluacion_total_corridas": len(test_runs),
         "generaciones_exitosas": success_count,
@@ -217,6 +245,10 @@ def main():
         "rag_oficial_exitoso": rag_only_count,
         "calificacion_promedio_heuristica_exitosas": round(avg_score, 2),
         "latencia_promedio_ms": round(avg_latency, 2),
+        "latencia_p50_ms": round(p50_latency, 2),
+        "latencia_p95_ms": round(p95_latency, 2),
+        "latencia_max_ms": round(max_latency, 2),
+        "cache_hits": cache_hits,
         "corridas_detalle": results
     }
     
@@ -237,6 +269,10 @@ def main():
     print(f"Uso de Fallback Curricular:  {fallback_count}")
     print(f"Uso de RAG Puro:            {rag_only_count}")
     print(f"Latencia Promedio:          {round(avg_latency, 2)} ms")
+    print(f"Latencia p50:               {round(p50_latency, 2)} ms")
+    print(f"Latencia p95:               {round(p95_latency, 2)} ms")
+    print(f"Latencia Max:               {round(max_latency, 2)} ms")
+    print(f"Cache Hits (Aciertos):      {cache_hits}")
     print(f"Score Promedio (Exitosas):  {round(avg_score, 2)} / 10.0")
     print("="*60 + "\n")
 

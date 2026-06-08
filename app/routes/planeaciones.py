@@ -73,7 +73,10 @@ def generar_planeacion(payload: PlaneacionRequest, request: Request):
             latency_ms=round(latency_ms, 2),
             estimated_cost=round(total_cost, 6),
             retrieval_success=meta["retrieval_success"],
-            structured_curriculum_success=meta["structured_curriculum_success"]
+            structured_curriculum_success=meta["structured_curriculum_success"],
+            chunks_count=meta.get("chunks_count", 0),
+            context_chars=meta.get("context_chars", 0),
+            cache_hit=meta.get("cache_hit", False)
         )
         
         return PlaneacionResponse(
@@ -115,7 +118,8 @@ def debug_planeacion(payload: PlaneacionRequest):
             nivel=payload.nivel,
             campo_formativo=payload.campo_formativo,
             duracion_dias=payload.duracion_dias,
-            modelo=payload.modelo
+            modelo=payload.modelo,
+            limit=5
         )
         
         chunks_mapeados = [ChunkMinimalResponse(**c) for c in chunks_utilizados]

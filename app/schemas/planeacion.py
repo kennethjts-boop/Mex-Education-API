@@ -33,6 +33,9 @@ class PlaneacionMetadata(BaseModel):
     estimated_cost: float
     retrieval_success: bool
     structured_curriculum_success: bool
+    chunks_count: int
+    context_chars: int
+    cache_hit: bool
 
 class PlaneacionResponse(BaseModel):
     planeacion: PlaneacionContenido
