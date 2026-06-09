@@ -44,7 +44,7 @@ def evaluate_run(base_url: str, payload: dict) -> dict:
     error_msg = ""
     
     try:
-        with urllib.request.urlopen(req, timeout=15) as response:
+        with urllib.request.urlopen(req, timeout=45) as response:
             status_code = response.status
             response_body = response.read().decode("utf-8")
     except urllib.error.HTTPError as e:

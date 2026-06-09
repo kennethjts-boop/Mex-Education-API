@@ -17,3 +17,16 @@
 - Inglés de 2° recupera correctamente en RAG
 
 Commit sugerido: `chore: close grade 2 corpus validation`
+
+---
+
+## Calendario Escolar SEP 2025-2026
+
+**Ingesta manual y pruebas de búsqueda completadas con éxito.**
+
+- Estado: Completado
+- Chunks vectorizados: 9
+- Pruebas de recuperación semántica: 8/8 pasadas (100% de éxito)
+- Script de ingesta: [ingest_calendar_manual.py](file:///Users/kennethjts/mex-education-api/scripts/ingest_calendar_manual.py)
+- Script de pruebas: [test_calendar_search.py](file:///Users/kennethjts/mex-education-api/scripts/test_calendar_search.py)
+- Documento recuperado como primer resultado para todas las consultas del calendario.

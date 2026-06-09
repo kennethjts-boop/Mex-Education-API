@@ -5,7 +5,7 @@ import re
 from typing import List, Dict, Any, Optional
 from uuid import UUID
 from app.db.supabase import supabase_client
-from app.services.nem_search import normalize_modelo
+from app.services.nem_search import normalize_modelo, normalize_nivel, normalize_grado
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -30,9 +30,13 @@ def get_contenidos(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
     Retorna la lista de contenidos que coinciden con los filtros especificados.
     Soporta modo Supabase y modo local simulado (offline).
     """
-    # Normalizar modelo si está presente en los filtros
+    # Normalizar modelo, nivel y grado si están presentes en los filtros
     if "modelo" in filters and filters["modelo"]:
         filters["modelo"] = normalize_modelo(filters["modelo"])
+    if "nivel" in filters and filters["nivel"]:
+        filters["nivel"] = normalize_nivel(filters["nivel"])
+    if "grado" in filters and filters["grado"]:
+        filters["grado"] = normalize_grado(filters["grado"])
         
     is_supabase_ready = (
         supabase_client is not None 
@@ -61,6 +65,14 @@ def get_contenidos(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
                     if normalize_modelo(v) != normalize_modelo(c.get("modelo")):
                         match = False
                         break
+                elif k == "nivel":
+                    if normalize_nivel(v) != normalize_nivel(c.get("nivel")):
+                        match = False
+                        break
+                elif k == "grado":
+                    if normalize_grado(v) != normalize_grado(c.get("grado")):
+                        match = False
+                        break
                 elif str(c.get(k)) != str(v):
                     match = False
                     break
@@ -78,6 +90,10 @@ def get_pda(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     if "modelo" in filters and filters["modelo"]:
         filters["modelo"] = normalize_modelo(filters["modelo"])
+    if "nivel" in filters and filters["nivel"]:
+        filters["nivel"] = normalize_nivel(filters["nivel"])
+    if "grado" in filters and filters["grado"]:
+        filters["grado"] = normalize_grado(filters["grado"])
         
     is_supabase_ready = (
         supabase_client is not None 
@@ -121,6 +137,14 @@ def get_pda(filters: Dict[str, Any]) -> List[Dict[str, Any]]:
                 if v is not None:
                     if k == "modelo":
                         if normalize_modelo(v) != normalize_modelo(pda_record.get("modelo")):
+                            match = False
+                            break
+                    elif k == "nivel":
+                        if normalize_nivel(v) != normalize_nivel(pda_record.get("nivel")):
+                            match = False
+                            break
+                    elif k == "grado":
+                        if normalize_grado(v) != normalize_grado(pda_record.get("grado")):
                             match = False
                             break
                     elif str(pda_record.get(k)) != str(v):
@@ -180,8 +204,8 @@ def relacionar_curriculo(
             # Filtrar
             if (
                 normalize_modelo(c.get("modelo")) == modelo_norm
-                and c.get("nivel") == nivel
-                and str(c.get("grado")) == str(grado)
+                and normalize_nivel(c.get("nivel")) == normalize_nivel(nivel)
+                and normalize_grado(c.get("grado")) == normalize_grado(grado)
                 and c.get("campo_formativo") == campo_formativo
             ):
                 all_structures.append(c)

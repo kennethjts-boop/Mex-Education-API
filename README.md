@@ -101,6 +101,21 @@ python3 scripts/test_search_quality.py
 ```
 *Este script evalúa la tasa de recuperación, mostrando similitudes y fragmentos y guardando un informe en:* `reports/search_quality_report.json`
 
+### 5. Soporte e Ingestión de Documentos Visuales y Calendarios
+Para documentos puramente visuales o infográficos (como el *Calendario Escolar SEP 2025-2026* de una sola página), la extracción de texto tradicional del PDF suele generar un contenido pobre o nulo. Para dar soporte óptimo a estos archivos, se realiza una **ingestión manual estructurada** que crea fragmentos conceptuales densos optimizados para búsqueda semántica pgvector.
+
+**Ejecutar Ingestión Manual del Calendario:**
+```bash
+python3 scripts/ingest_calendar_manual.py --force
+```
+*Este script inserta el documento y 9 fragmentos altamente descriptivos que detallan hitos de inicio y fin de clases, Consejo Técnico Escolar (CTE), periodos vacacionales, preinscripciones, entrega de boletas y descargas administrativas en Supabase y el registro local.*
+
+**Ejecutar Batería de Pruebas de Búsqueda del Calendario:**
+```bash
+python3 scripts/test_calendar_search.py
+```
+*Este script prueba 8 consultas semánticas críticas en lenguaje natural relacionadas al calendario y verifica que el primer resultado recuperado con mayor similitud sea siempre "Calendario Escolar SEP 2025-2026".*
+
 ### 🔍 Interpretación de Reportes
 - **`ingestion_report.json`**: Revisa la sección `anomalias`. Si detecta chunks duplicados o pequeños, evalúa limpiar el PDF.
 - **`search_quality_report.json`**: Comprueba la `tasa_recuperacion`. Un valor del `100.00%` indica que todos los conceptos clave de la NEM fueron localizados satisfactoriamente en los textos indexados.

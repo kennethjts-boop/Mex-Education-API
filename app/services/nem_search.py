@@ -7,11 +7,14 @@ from app.db.supabase import supabase_client
 
 logger = logging.getLogger("uvicorn.error")
 
+_openai_client = None
+
 def get_embedding(text: str) -> List[float]:
     """
     Generates a 1536-dimensional vector embedding for the input text using OpenAI.
     If the OpenAI API key is missing or invalid, generates a mock embedding vector.
     """
+    global _openai_client
     is_openai_configured = settings.OPENAI_API_KEY and "your-openai-api-key" not in settings.OPENAI_API_KEY
     
     if not is_openai_configured:
@@ -22,8 +25,9 @@ def get_embedding(text: str) -> List[float]:
         return [x / magnitude for x in raw_vec]
     
     try:
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        response = client.embeddings.create(
+        if _openai_client is None:
+            _openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        response = _openai_client.embeddings.create(
             model="text-embedding-3-small",
             input=text
         )
@@ -33,6 +37,7 @@ def get_embedding(text: str) -> List[float]:
         raw_vec = [random.uniform(-0.1, 0.1) for _ in range(1536)]
         magnitude = sum(x**2 for x in raw_vec) ** 0.5
         return [x / magnitude for x in raw_vec]
+
 
 def normalize_modelo(modelo: Optional[str]) -> Optional[str]:
     """
@@ -45,6 +50,37 @@ def normalize_modelo(modelo: Optional[str]) -> Optional[str]:
     if val in ["nem", "nem_2022", "nueva escuela mexicana", "nueva escuela mexicana 2022"]:
         return "NEM_2022"
     return modelo
+
+def normalize_nivel(nivel: Optional[str]) -> Optional[str]:
+    """
+    Normaliza el nivel educativo a la cadena estándar 'Telesecundaria'.
+    Acepta variaciones como 'Secundaria', 'secundaria', 'Telesecundaria',
+    'tele secundaria', 'TELESECUNDARIA', 'Nivel secundaria', 'Educación secundaria'.
+    """
+    if not nivel:
+        return None
+    val = nivel.lower().strip()
+    if "secundaria" in val:
+        return "Telesecundaria"
+    return nivel
+
+def normalize_grado(grado: Optional[str]) -> Optional[str]:
+    """
+    Normaliza el grado escolar a un dígito estándar ('1', '2' o '3').
+    Mapea variaciones como '2', '2°', '2do', '2do Grado', 'Segundo', 'Segundo grado' a '2'.
+    Mapea '1', '1°', '1er', '1er Grado', 'Primer', 'Primer grado' a '1'.
+    Mapea '3', '3°', '3er', '3er Grado', 'Tercer', 'Tercer grado' a '3'.
+    """
+    if not grado:
+        return None
+    val = grado.lower().strip()
+    if any(x in val for x in ["segundo", "2"]):
+        return "2"
+    if any(x in val for x in ["primer", "1"]):
+        return "1"
+    if any(x in val for x in ["tercer", "3"]):
+        return "3"
+    return grado
 
 def search_nem_chunks(
     query_text: str,
@@ -70,9 +106,14 @@ def search_nem_chunks(
         logger.info(f"Caché RAG Hit para consulta: '{query_text}'")
         return cached_val
 
-    # Normalizar el modelo si se especifica en los filtros
-    if filters and "modelo" in filters and filters["modelo"]:
-        filters["modelo"] = normalize_modelo(filters["modelo"])
+    # Normalizar el modelo, nivel y grado si se especifican en los filtros
+    if filters:
+        if "modelo" in filters and filters["modelo"]:
+            filters["modelo"] = normalize_modelo(filters["modelo"])
+        if "nivel" in filters and filters["nivel"]:
+            filters["nivel"] = normalize_nivel(filters["nivel"])
+        if "grado" in filters and filters["grado"]:
+            filters["grado"] = normalize_grado(filters["grado"])
         
     embedding = get_embedding(query_text)
     
